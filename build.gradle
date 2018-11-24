@@ -1,0 +1,47 @@
+plugins {
+    id 'kotlin-multiplatform' version '1.3.10'
+}
+repositories {
+    mavenCentral()
+}
+
+def hostPreset = determinePreset()
+
+kotlin {
+    targets {
+        fromPreset(hostPreset, 'linux')
+
+        configure([linux]) {
+            compilations.main.outputKinds('EXECUTABLE')
+            compilations.main.entryPoint = 'org.dronix.knsamples.main'
+        }
+    }
+    sourceSets {
+        linuxMain {
+        }
+        linuxTest {
+        }
+    }
+}
+
+/* gradle -PbuildType=arm build */
+private def determinePreset() {
+    def preset = kotlin.presets.linuxX64
+
+    if (project.hasProperty('buildType') && project.buildType == "arm") {
+        preset = kotlin.presets.linuxArm32Hfp
+    }
+    preset
+}
+
+task runProgram {
+    def buildType = 'release' // Change to 'debug' to run application with debug symbols.
+    dependsOn "link${buildType.capitalize()}ExecutableLinux"
+    doLast {
+        def programFile = kotlin.targets.linux.compilations.main.getBinary('EXECUTABLE', buildType)
+        exec {
+            executable programFile
+            args ''
+        }
+    }
+}
